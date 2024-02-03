@@ -2,6 +2,8 @@ package frc.robot;
 
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkBase.SoftLimitDirection;
 
@@ -21,13 +23,18 @@ public class Robot extends TimedRobot {
 
   // variables for the arm controls
   CANSparkMax armYAxis = new CANSparkMax(11, MotorType.kBrushless);
+  WPI_TalonSRX armXAxis = new WPI_TalonSRX(3);
 
   //arm joystick
   XboxController armController = new XboxController(0);
 
-  //Arm power output for y axis
+  //Arm power output for x and y axis
   static final double ArmYOutputPower = 0.6;
+  static final double ArmXOutputPower = 0.65;
+
+  //Limits for arm y 
   static final int ArmCurrentLimitA = 20;
+
 
   //Varibles needed for the code
   boolean armUp = true; //Arm initialized to up because that's how it would start a match
@@ -37,6 +44,7 @@ public class Robot extends TimedRobot {
   double autoStart = 0;
   boolean goForAuto = true;
 
+  
 
   private Command m_autonomousCommand;
 
@@ -53,7 +61,8 @@ public class Robot extends TimedRobot {
     armYAxis.setIdleMode(IdleMode.kBrake);
     armYAxis.setSmartCurrentLimit(ArmCurrentLimitA);
   ((CANSparkMax) armYAxis).burnFlash();
-   
+    armXAxis.setInverted(false);
+    armXAxis.setNeutralMode(NeutralMode.Brake);
 
     // limit the direction of the arm's rotations (kReverse = up)
     armYAxis.enableSoftLimit(SoftLimitDirection.kForward, false);
@@ -70,6 +79,13 @@ public class Robot extends TimedRobot {
     armYAxis.set(percent);
     SmartDashboard.putNumber("armYAxis power(%)", percent);
   }
+
+  //function to set the arm output power in the horizontal direction
+  public void setArmXAxisMotor(double percent) {
+    armXAxis.set(percent);
+    SmartDashboard.putNumber("armXaxis power(%)", percent);
+  }
+
   /**
    * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
    * that you want ran during disabled, autonomous, teleoperated and test.
@@ -88,7 +104,10 @@ public class Robot extends TimedRobot {
 
   /** This function is called once each time the robot enters Disabled mode. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    armYAxis.set(0);
+    armXAxis.set(0);
+  }
 
   @Override
   public void disabledPeriodic() {}
@@ -111,8 +130,44 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
 
+  
+
+    // This makes sure that the autonomous stops running when
+    // teleop starts running. If you want the autonomous to
+    // continue until interrupted by another command, remove
+    // this line or comment it out.
+    if (m_autonomousCommand != null) {
+      m_autonomousCommand.cancel();
+    }
+  }
+
+  /** This function is called periodically during operator control. */
+  @Override
+  public void teleopPeriodic() {
+
     //Code for the arm
     double armPower;
+
+    // motion for the arm in the horizontal direction
+    if (armController.getLeftTriggerAxis() > 0.5) {
+      //extend the arm
+      // we could set it to srmpower = armXOuptuPower x get left trigger axis ( test it on the pivot firs)
+      armPower = ArmXOutputPower;
+      //*armController.getLeftTriggerAxis();
+    }
+    else if (armController.getRightTriggerAxis() > 0.5) {
+      //retract the arm
+      armPower = -ArmXOutputPower;
+      //*armController.getRightTriggerAxis();
+    }
+    else {
+      // do nothing and let it sit where it is
+      armPower = 0.0;
+      //armXAxis.stopMotor();
+      armXAxis.setNeutralMode(NeutralMode.Brake);
+    }
+    setArmXAxisMotor(armPower);
+  
 
     // motion for the arm in the vertical direction
     if (armController.getLeftY() > 0.5) {
@@ -131,24 +186,12 @@ public class Robot extends TimedRobot {
       armYAxis.setIdleMode(IdleMode. kBrake);
     }
     setArmYAxisMotor(armPower);
-
-
-    // This makes sure that the autonomous stops running when
-    // teleop starts running. If you want the autonomous to
-    // continue until interrupted by another command, remove
-    // this line or comment it out.
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
-    }
+    // Cancels all running commands at the start of test mode.
   }
-
-  /** This function is called periodically during operator control. */
-  @Override
-  public void teleopPeriodic() {}
-
+    
   @Override
   public void testInit() {
-    // Cancels all running commands at the start of test mode.
+    
     CommandScheduler.getInstance().cancelAll();
   }
 
