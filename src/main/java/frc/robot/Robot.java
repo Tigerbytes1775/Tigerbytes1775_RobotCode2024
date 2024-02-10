@@ -1,14 +1,14 @@
 package frc.robot;
 
-import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkBase.SoftLimitDirection;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -25,8 +25,9 @@ public class Robot extends TimedRobot {
   CANSparkMax armYAxis = new CANSparkMax(11, MotorType.kBrushless);
   WPI_TalonSRX armXAxis = new WPI_TalonSRX(3);
 
-  //arm joystick
-  XboxController armController = new XboxController(0);
+  //joysticks
+  XboxController driverController = new XboxController(0);
+  XboxController armController = new XboxController(2);
 
   //Arm power output for x and y axis
   static final double ArmYOutputPower = 0.6;
@@ -44,6 +45,10 @@ public class Robot extends TimedRobot {
   double autoStart = 0;
   boolean goForAuto = true;
 
+
+  //roller motors
+  PWMVictorSPX TopMotor = new PWMVictorSPX(8);
+  PWMVictorSPX BottomMotor = new PWMVictorSPX(9);
   
 
   private Command m_autonomousCommand;
@@ -187,6 +192,15 @@ public class Robot extends TimedRobot {
     }
     setArmYAxisMotor(armPower);
     // Cancels all running commands at the start of test mode.
+    double rollerPower;
+    rollerPower = driverController.getLeftY() * 0.5;
+    TopMotor.set(rollerPower);
+    BottomMotor.set(rollerPower);
+    
+   
+    
+   
+    
   }
     
   @Override
